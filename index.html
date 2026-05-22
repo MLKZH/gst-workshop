@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GST - учет мастерской</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="login-screen" id="loginScreen" hidden>
+      <form class="login-card" id="loginForm">
+        <div class="brand login-brand">
+          <span class="brand-mark">GST</span>
+          <div>
+            <h1>GST</h1>
+            <p>ремонт ПК</p>
+          </div>
+        </div>
+        <label>
+          Пользователь
+          <select id="userSelect">
+            <option value="aziz">Азиз</option>
+            <option value="muslim">Муслим</option>
+            <option value="damir">Дамир</option>
+          </select>
+        </label>
+        <label>
+          Пароль
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Введите пароль" />
+        </label>
+        <button class="primary-button" type="submit">Войти</button>
+        <p class="login-error" id="loginError"></p>
+      </form>
+    </div>
+
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">GST</span>
+          <div>
+            <h1>GST</h1>
+            <p>ремонт ПК</p>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-button active" data-view="orders">Заказы</button>
+          <button class="nav-button" data-view="clients">Клиенты</button>
+          <button class="nav-button" data-view="services">Услуги</button>
+          <button class="nav-button" data-view="receipts">Печать</button>
+        </nav>
+
+        <div class="summary">
+          <div>
+            <span>Открыто</span>
+            <strong id="openCount">0</strong>
+          </div>
+          <div>
+            <span>За сегодня</span>
+            <strong id="todayTotal">0 ₸</strong>
+          </div>
+          <div class="sync-state">
+            <span>Режим</span>
+            <strong id="syncStatus">Локально</strong>
+          </div>
+          <button class="sidebar-link" id="logoutButton" hidden>Выйти</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">GST сервис</p>
+            <h2 id="viewTitle">Заказы</h2>
+          </div>
+          <button class="primary-button" id="quickOrderButton">Новый заказ</button>
+        </section>
+
+        <section class="view active" id="ordersView">
+          <form class="panel form-grid" id="orderForm">
+            <input type="hidden" id="orderId" />
+            <label>
+              Клиент
+              <select id="orderClient" required></select>
+            </label>
+            <label>
+              Устройство
+              <input id="device" placeholder="Ноутбук ASUS, системный блок..." required />
+            </label>
+            <label>
+              Неисправность
+              <input id="issue" placeholder="Не включается, шумит, нет изображения..." required />
+            </label>
+            <label>
+              Статус
+              <select id="status">
+                <option>Принят</option>
+                <option>В диагностике</option>
+                <option>В ремонте</option>
+                <option>Готов</option>
+                <option>Выдан</option>
+              </select>
+            </label>
+            <label class="wide">
+              Быстрые услуги
+              <select id="servicePicker"></select>
+            </label>
+            <label class="wide">
+              Работы и заметки
+              <textarea id="workNotes" rows="3" placeholder="Добавленные услуги и комментарии"></textarea>
+            </label>
+            <label>
+              Сумма
+              <input id="amount" type="number" min="0" step="100" value="0" />
+            </label>
+            <label>
+              Предоплата
+              <input id="prepay" type="number" min="0" step="100" value="0" />
+            </label>
+            <div class="form-actions wide">
+              <button type="submit" class="primary-button">Сохранить заказ</button>
+              <button type="button" class="ghost-button" id="clearOrderForm">Очистить</button>
+            </div>
+          </form>
+
+          <div class="list-toolbar">
+            <input id="orderSearch" placeholder="Поиск по клиенту, устройству или номеру" />
+            <select id="statusFilter">
+              <option value="">Все статусы</option>
+              <option>Принят</option>
+              <option>В диагностике</option>
+              <option>В ремонте</option>
+              <option>Готов</option>
+              <option>Выдан</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Номер</th>
+                  <th>Клиент</th>
+                  <th>Устройство</th>
+                  <th>Статус</th>
+                  <th>Сумма</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="ordersTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view" id="clientsView">
+          <form class="panel form-grid" id="clientForm">
+            <input type="hidden" id="clientId" />
+            <label>
+              Имя клиента
+              <input id="clientName" placeholder="Иван Петров" required />
+            </label>
+            <label>
+              Телефон
+              <input id="clientPhone" placeholder="+7..." required />
+            </label>
+            <label class="wide">
+              Заметка
+              <input id="clientNote" placeholder="Постоянный клиент, организация, адрес..." />
+            </label>
+            <div class="form-actions wide">
+              <button type="submit" class="primary-button">Сохранить клиента</button>
+              <button type="button" class="ghost-button" id="clearClientForm">Очистить</button>
+            </div>
+          </form>
+          <div class="cards" id="clientsList"></div>
+        </section>
+
+        <section class="view" id="servicesView">
+          <form class="panel form-grid" id="serviceForm">
+            <input type="hidden" id="serviceId" />
+            <label>
+              Название услуги
+              <input id="serviceName" placeholder="Чистка от пыли" required />
+            </label>
+            <label>
+              Цена
+              <input id="servicePrice" type="number" min="0" step="100" placeholder="5000" required />
+            </label>
+            <label class="wide">
+              Описание для квитанции
+              <input id="serviceDescription" placeholder="Профилактика системы охлаждения" />
+            </label>
+            <div class="form-actions wide">
+              <button type="submit" class="primary-button">Сохранить услугу</button>
+              <button type="button" class="ghost-button" id="clearServiceForm">Очистить</button>
+            </div>
+          </form>
+          <div class="cards" id="servicesList"></div>
+        </section>
+
+        <section class="view" id="receiptsView">
+          <div class="panel receipt-controls">
+            <label>
+              Заказ для печати
+              <select id="printOrder"></select>
+            </label>
+            <div class="segmented">
+              <button class="active" data-print-type="short">Короткий чек</button>
+              <button data-print-type="receipt">Квитанция</button>
+            </div>
+            <button class="primary-button" id="printButton">Печать</button>
+          </div>
+          <article class="receipt-preview" id="receiptPreview"></article>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
