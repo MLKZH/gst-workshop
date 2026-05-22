@@ -29,8 +29,36 @@ const users = {
   }
 };
 
+const officialClients = [
+  {
+    name: "ГУ Аппарат акима Талгарского района",
+    phone: "+7 (72774) 2-17-72; +7 (72774) 2-50-87; +7 (727) 295-66-72",
+    note: "Адрес: г. Талгар, ул. Кунаева, 65. Индекс 040116. Запись к акиму: +7 (72774) 2-10-94. E-mail: talgar_akimat@almobl.gov.kz. Аким: Айдарбеков Танат Есенкельдиевич, приемная 8-(72774)-2-50-87, t.aidarbekov@almobl.gov.kz."
+  },
+  {
+    name: "ГУ Аппарат акима города Талгар Талгарского района",
+    phone: "+7 (72774) 2-39-72; +7 (72774) 2-17-71; 872774 2-39-77",
+    note: "Адрес: г. Талгар, ул. Гагарина, 76. Индекс 041600. Аким: Абилхаирұлы Арыстанбек. E-mail: akimat-2013@mail.ru."
+  },
+  { name: "Аппарат акима Кайнарского сельского округа", phone: "8 (727) 75036", note: "Аким: Манапбаев Нұрболат Қайбелденұлы. E-mail: n.manapbaev@almobl.gov.kz." },
+  { name: "Аппарат акима Бескайнарского сельского округа", phone: "8 (72774) 41270", note: "Аким: Джабаев Арман Асылбекович. E-mail: m.adilbekov@zhetysu.gov.kz." },
+  { name: "Аппарат акима Бесагашского сельского округа", phone: "8 (727) 391-52-14; 56676", note: "Аким: Жунусов Ернар Ниетбаевич. E-mail: e.zhunusov@almobl.gov.kz." },
+  { name: "Аппарат акима Алатауского сельского округа", phone: "8 (72774) 48232", note: "Аким: Сейтов Азамат Серикович. E-mail: k.smagulov@almobl.gov.kz." },
+  { name: "Аппарат акима Бельбулакского сельского округа", phone: "8 (727) 4-34-46", note: "Аким: Досымбаев Нурбол Инакынович. E-mail: n.dosymbaev@almobl.gov.kz." },
+  { name: "Аппарат акима Нуринского сельского округа", phone: "8 (72774) 58296", note: "Аким: Оразбаев Ахмет Заетович." },
+  { name: "Аппарат акима Кендалинского сельского округа", phone: "8 (72774) 4-18-78", note: "Аким: Умирзаков Алмас Нурдаулетович. E-mail: a.umirzakov@almobl.gov.kz." },
+  { name: "Аппарат акима Гульдалинского сельского округа", phone: "8 (72774) 7-28-27", note: "Аким: Маханбеткалиулы Махсат. E-mail: m.mahanbetkaliyli@almobl.gov.kz." },
+  { name: "Аппарат акима Панфиловского сельского округа", phone: "8 (72774) 53-6-65", note: "Аким: Даулеталиев Дулат Маратович. E-mail: d.dauletaliev@almobl.gov.kz." },
+  {
+    name: "Аппарат маслихата Талгарского района",
+    phone: "8 (72774) 2-50-72; 8 (72774) 2-06-92",
+    note: "Адрес: Алматинская область, г. Талгар, ул. Конаева 65. Председатель: Алибеков Мухит Бейсембекович, 8(727)295-65-33, m.alibekov@talgarmaslihat.gov.kz. Руководитель аппарата: Даркенбаева Умит Танжарыковна, 8(72774)2-50-72. Руководитель отдела: Амантайқызы Гауһар, 8(72774)2-06-92, g.amantaikyzy@talgarmaslihat.gov.kz."
+  }
+].map((client) => ({ id: crypto.randomUUID(), ...client }));
+
 const starterData = {
   clients: [
+    ...officialClients,
     { id: crypto.randomUUID(), name: "Алексей Смирнов", phone: "+7 777 123 45 67", note: "Ноутбук для работы" },
     { id: crypto.randomUUID(), name: "ТОО Альфа", phone: "+7 701 555 22 11", note: "Безналичный расчет" }
   ],
@@ -90,7 +118,22 @@ function ensureDataFile(username) {
 function readData(username) {
   const dataFile = dataFileForUser(username);
   ensureDataFile(username);
-  return JSON.parse(fs.readFileSync(dataFile, "utf8"));
+  const data = ensureOfficialClients(JSON.parse(fs.readFileSync(dataFile, "utf8")));
+  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), "utf8");
+  return data;
+}
+
+function ensureOfficialClients(data) {
+  const existingNames = new Set((data.clients || []).map((client) => client.name));
+  const missingClients = officialClients
+    .filter((client) => !existingNames.has(client.name))
+    .map((client) => ({ ...client, id: crypto.randomUUID() }));
+
+  if (missingClients.length) {
+    data.clients = [...missingClients, ...(data.clients || [])];
+  }
+
+  return data;
 }
 
 function orderNumber(order) {
@@ -131,7 +174,7 @@ function writeData(username, data) {
   const dataFile = dataFileForUser(username);
   ensureDataFile(username);
   const cleanData = {
-    clients: Array.isArray(data.clients) ? data.clients : [],
+    clients: Array.isArray(data.clients) ? ensureOfficialClients({ clients: data.clients }).clients : [],
     services: Array.isArray(data.services) ? data.services : [],
     orders: Array.isArray(data.orders) ? data.orders : []
   };
