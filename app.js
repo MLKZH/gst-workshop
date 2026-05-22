@@ -1,5 +1,12 @@
 const storageKey = "gst-workshop-ledger";
 const tokenKey = "gst-workshop-token";
+const localUserKey = "gst-workshop-local-user";
+
+const localUsers = {
+  aziz: { name: "Азиз", password: "aziz123" },
+  muslim: { name: "Муслим", password: "muslim123" },
+  damir: { name: "Дамир", password: "damir123" }
+};
 
 const starterData = {
   clients: [
@@ -14,7 +21,8 @@ const starterData = {
   orders: []
 };
 
-let state = loadLocalState();
+let currentUser = localStorage.getItem(localUserKey) || "";
+let state = currentUser ? loadLocalState(currentUser) : structuredClone(starterData);
 let printType = "short";
 let apiMode = false;
 let authToken = localStorage.getItem(tokenKey) || "";
@@ -74,13 +82,18 @@ const els = {
   receiptPreview: document.querySelector("#receiptPreview")
 };
 
-function loadLocalState() {
-  const saved = localStorage.getItem(storageKey);
+function userStorageKey(username) {
+  return `${storageKey}-${username || "default"}`;
+}
+
+function loadLocalState(username = currentUser) {
+  const saved = localStorage.getItem(userStorageKey(username));
   return saved ? JSON.parse(saved) : structuredClone(starterData);
 }
 
 function saveLocalState() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
+  if (!currentUser && !apiMode) return;
+  localStorage.setItem(userStorageKey(currentUser), JSON.stringify(state));
 }
 
 async function apiRequest(path, options = {}) {
@@ -112,6 +125,7 @@ async function detectApi() {
   if (location.protocol === "file:") {
     apiMode = false;
     els.syncStatus.textContent = "Локально";
+    els.logoutButton.hidden = false;
     return;
   }
 
@@ -123,11 +137,19 @@ async function detectApi() {
   }
 
   els.syncStatus.textContent = apiMode ? "Общая база" : "Локально";
-  els.logoutButton.hidden = !apiMode;
+  els.logoutButton.hidden = false;
 }
 
 async function loadRemoteState() {
-  if (!apiMode) return;
+  if (!apiMode) {
+    if (!currentUser) {
+      showLogin();
+      return;
+    }
+    state = loadLocalState(currentUser);
+    hideLogin();
+    return;
+  }
   if (!authToken) {
     showLogin();
     return;
@@ -157,12 +179,25 @@ async function persistState() {
 
 function showLogin() {
   els.loginScreen.hidden = false;
+  if (currentUser && els.userSelect.querySelector(`[value="${currentUser}"]`)) {
+    els.userSelect.value = currentUser;
+  }
   els.passwordInput.focus();
 }
 
 function hideLogin() {
   els.loginScreen.hidden = true;
   els.loginError.textContent = "";
+  updateSyncStatus();
+}
+
+function updateSyncStatus() {
+  const userName = localUsers[currentUser]?.name || currentUser;
+  if (!userName) {
+    els.syncStatus.textContent = apiMode ? "Общая база" : "Локально";
+    return;
+  }
+  els.syncStatus.textContent = `${userName} · ${apiMode ? "общая" : "локально"}`;
 }
 
 function money(value) {
@@ -199,6 +234,7 @@ async function render({ skipSave = false } = {}) {
   renderServices();
   renderReceipt();
   renderSummary();
+  updateSyncStatus();
   if (!skipSave) await persistState();
 }
 
@@ -373,13 +409,32 @@ els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   els.loginError.textContent = "";
 
+  if (!apiMode) {
+    const username = els.userSelect.value;
+    const localUser = localUsers[username];
+    if (!localUser || els.passwordInput.value !== localUser.password) {
+      els.loginError.textContent = "Неверный пароль";
+      return;
+    }
+
+    currentUser = username;
+    localStorage.setItem(localUserKey, currentUser);
+    state = loadLocalState(currentUser);
+    els.passwordInput.value = "";
+    hideLogin();
+    await render({ skipSave: true });
+    return;
+  }
+
   try {
     const result = await apiRequest("/login", {
       method: "POST",
       body: JSON.stringify({ username: els.userSelect.value, password: els.passwordInput.value })
     });
     authToken = result.token;
+    currentUser = els.userSelect.value;
     localStorage.setItem(tokenKey, authToken);
+    localStorage.setItem(localUserKey, currentUser);
     els.passwordInput.value = "";
     await loadRemoteState();
     await render({ skipSave: true });
@@ -390,7 +445,9 @@ els.loginForm.addEventListener("submit", async (event) => {
 
 els.logoutButton.addEventListener("click", () => {
   authToken = "";
+  currentUser = "";
   localStorage.removeItem(tokenKey);
+  localStorage.removeItem(localUserKey);
   showLogin();
 });
 
