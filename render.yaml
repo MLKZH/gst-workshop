@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: gst-workshop
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: npm start
+    envVars:
+      - key: GST_SECRET
+        generateValue: true
+      - key: GST_AZIZ_PASSWORD
+        sync: false
+      - key: GST_MUSLIM_PASSWORD
+        sync: false
+      - key: GST_DAMIR_PASSWORD
+        sync: false
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: gst-data
+      mountPath: /var/data
+      sizeGB: 1
