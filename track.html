@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GST - проверка ремонта</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="track-page">
+    <main class="track-shell">
+      <section class="track-hero">
+        <div class="brand">
+          <span class="brand-mark">GST</span>
+          <div>
+            <h1>GST</h1>
+            <p>проверка ремонта</p>
+          </div>
+        </div>
+        <h2>Статус заявки</h2>
+        <form class="track-form" id="trackForm">
+          <label>
+            Номер заявки
+            <input id="trackNumber" placeholder="Например: AZ-R-0001" autocomplete="off" required />
+          </label>
+          <button class="primary-button" type="submit">Проверить</button>
+        </form>
+      </section>
+
+      <section class="track-result" id="trackResult">
+        <p class="empty">Введите номер из квитанции, чтобы посмотреть этап ремонта.</p>
+      </section>
+    </main>
+
+    <script src="track.js"></script>
+  </body>
+</html>

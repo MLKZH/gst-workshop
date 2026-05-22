@@ -11,16 +11,19 @@ const publicDir = __dirname;
 const users = {
   aziz: {
     name: "Азиз",
+    prefix: "AZ",
     password: process.env.GST_AZIZ_PASSWORD || "aziz123",
     dataFile: "data-aziz.json"
   },
   muslim: {
     name: "Муслим",
+    prefix: "MS",
     password: process.env.GST_MUSLIM_PASSWORD || "muslim123",
     dataFile: "data-muslim.json"
   },
   damir: {
     name: "Дамир",
+    prefix: "DM",
     password: process.env.GST_DAMIR_PASSWORD || "damir123",
     dataFile: "data-damir.json"
   }
@@ -88,6 +91,40 @@ function readData(username) {
   const dataFile = dataFileForUser(username);
   ensureDataFile(username);
   return JSON.parse(fs.readFileSync(dataFile, "utf8"));
+}
+
+function orderNumber(order) {
+  return `R-${String(order.number).padStart(4, "0")}`;
+}
+
+function trackingNumber(username, order) {
+  return `${users[username].prefix}-${orderNumber(order)}`;
+}
+
+function findTrackedOrder(number) {
+  const normalized = String(number || "").trim().toUpperCase();
+  if (!normalized) return null;
+
+  for (const username of Object.keys(users)) {
+    const data = readData(username);
+    const order = data.orders.find((item) => {
+      return trackingNumber(username, item) === normalized || orderNumber(item) === normalized;
+    });
+
+    if (order) {
+      return {
+        trackingNumber: trackingNumber(username, order),
+        date: order.date,
+        device: order.device,
+        issue: order.issue,
+        status: order.status,
+        amount: order.amount,
+        prepay: order.prepay
+      };
+    }
+  }
+
+  return null;
 }
 
 function writeData(username, data) {
@@ -164,6 +201,17 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         users: Object.entries(users).map(([id, user]) => ({ id, name: user.name }))
       });
+      return;
+    }
+
+    if (req.url.startsWith("/api/track") && req.method === "GET") {
+      const url = new URL(req.url, `http://localhost:${port}`);
+      const order = findTrackedOrder(url.searchParams.get("number"));
+      if (!order) {
+        sendText(res, 404, "Заявка не найдена");
+        return;
+      }
+      sendJson(res, 200, order);
       return;
     }
 

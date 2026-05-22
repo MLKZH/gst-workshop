@@ -3,9 +3,9 @@ const tokenKey = "gst-workshop-token";
 const localUserKey = "gst-workshop-local-user";
 
 const localUsers = {
-  aziz: { name: "Азиз", password: "aziz123" },
-  muslim: { name: "Муслим", password: "muslim123" },
-  damir: { name: "Дамир", password: "damir123" }
+  aziz: { name: "Азиз", password: "aziz123", prefix: "AZ" },
+  muslim: { name: "Муслим", password: "muslim123", prefix: "MS" },
+  damir: { name: "Дамир", password: "damir123", prefix: "DM" }
 };
 
 const starterData = {
@@ -212,6 +212,11 @@ function orderNumber(order) {
   return `R-${String(order.number).padStart(4, "0")}`;
 }
 
+function trackingNumber(order) {
+  const prefix = localUsers[currentUser]?.prefix || "GST";
+  return `${prefix}-${orderNumber(order)}`;
+}
+
 function nextOrderNumber() {
   return state.orders.reduce((max, order) => Math.max(max, order.number || 0), 0) + 1;
 }
@@ -250,7 +255,7 @@ function renderSelectors() {
   els.printOrder.innerHTML = state.orders
     .map((order) => {
       const client = clientById(order.clientId);
-      return `<option value="${order.id}">${orderNumber(order)} - ${client?.name || "Клиент удален"} - ${order.device}</option>`;
+      return `<option value="${order.id}">${trackingNumber(order)} - ${client?.name || "Клиент удален"} - ${order.device}</option>`;
     })
     .join("");
 }
@@ -260,7 +265,7 @@ function renderOrders() {
   const status = els.statusFilter.value;
   const orders = state.orders.filter((order) => {
     const client = clientById(order.clientId);
-    const haystack = `${orderNumber(order)} ${client?.name || ""} ${client?.phone || ""} ${order.device} ${order.issue}`.toLowerCase();
+    const haystack = `${trackingNumber(order)} ${orderNumber(order)} ${client?.name || ""} ${client?.phone || ""} ${order.device} ${order.issue}`.toLowerCase();
     return (!status || order.status === status) && (!search || haystack.includes(search));
   });
 
@@ -274,7 +279,7 @@ function renderOrders() {
       const client = clientById(order.clientId);
       return `
         <tr>
-          <td><strong>${orderNumber(order)}</strong><br><span>${order.date}</span></td>
+          <td><strong>${trackingNumber(order)}</strong><br><span>${order.date}</span></td>
           <td>${client?.name || "Клиент удален"}<br><span>${client?.phone || ""}</span></td>
           <td>${order.device}<br><span>${order.issue}</span></td>
           <td>${order.status}</td>
@@ -344,8 +349,9 @@ function renderReceipt() {
 
   if (printType === "short") {
     els.receiptPreview.innerHTML = `
-      <h3>Короткий чек ${orderNumber(order)}</h3>
+      <h3>Короткий чек ${trackingNumber(order)}</h3>
       <div class="receipt-meta">
+        <span>Проверка ремонта: ${location.origin}/track.html</span>
         <span>Дата: ${order.date}</span>
         <span>Клиент: ${client?.name || "Клиент удален"}</span>
         <span>Телефон: ${client?.phone || ""}</span>
@@ -362,7 +368,8 @@ function renderReceipt() {
   els.receiptPreview.innerHTML = `
     <h3>Квитанция о приеме в ремонт</h3>
     <div class="receipt-meta">
-      <span>Номер: ${orderNumber(order)}</span>
+      <span>Номер заявки: ${trackingNumber(order)}</span>
+      <span>Проверка ремонта: ${location.origin}/track.html</span>
       <span>Дата приема: ${order.date}</span>
       <span>Клиент: ${client?.name || "Клиент удален"}</span>
       <span>Телефон: ${client?.phone || ""}</span>
